@@ -1,138 +1,102 @@
-"""
-model.py — NLP Core: Embedding + Cosine Similarity
-"""
-
+import os
 import re
 import time
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
-# ─────────────────────────────────────────────────────────────
-# Load model sekali saja saat startup
-# ─────────────────────────────────────────────────────────────
+# ==========================================================
+# MODEL YANG HARUS SAMA DENGAN precompute_embeddings.py
+# ==========================================================
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-print("[model.py] Memuat model SentenceTransformer...")
-_model = SentenceTransformer('all-mpnet-base-v2')
-print("[model.py] Model siap.")
+print("[model] Loading SentenceTransformer...")
+model = SentenceTransformer(MODEL_NAME)
+print("[model] Model loaded.")
 
-_jobs_df = None
-_job_embeddings = None
+jobs_df = None
+job_embeddings = None
 
 
-# ─────────────────────────────────────────────────────────────
-# Load cached dataframe + embeddings
-# ─────────────────────────────────────────────────────────────
-def load_jobs_and_embeddings(
-    df_path='dataset/jobs_clean.pkl',
-    emb_path='dataset/job_embeddings.npy'
-):
+# ==========================================================
+# TEXT PREPROCESS
+# ==========================================================
+def preprocess_text(text):
+    text = str(text).lower()
+    text = re.sub(r"[^a-z0-9 ]", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
-    global _jobs_df, _job_embeddings
 
-    if _jobs_df is not None:
-        return _jobs_df, _job_embeddings
+# ==========================================================
+# LOAD DATASET
+# ==========================================================
+def load_jobs_and_embeddings():
 
-    import os
+    global jobs_df
+    global job_embeddings
+
+    if jobs_df is not None:
+        return jobs_df, job_embeddings
+
+    df_path = "dataset/jobs_clean.pkl"
+    emb_path = "dataset/job_embeddings.npy"
 
     if not os.path.exists(df_path):
         raise FileNotFoundError(
-            f"File tidak ditemukan: {df_path}\n"
-            "Jalankan dulu: python precompute_embeddings.py"
+            "jobs_clean.pkl tidak ditemukan.\n"
+            "Silakan jalankan precompute_embeddings.py terlebih dahulu."
         )
 
     if not os.path.exists(emb_path):
         raise FileNotFoundError(
-            f"File tidak ditemukan: {emb_path}\n"
-            "Jalankan dulu: python precompute_embeddings.py"
+            "job_embeddings.npy tidak ditemukan.\n"
+            "Silakan jalankan precompute_embeddings.py terlebih dahulu."
         )
 
-    t0 = time.time()
+    start = time.time()
 
-    print("[model.py] Loading dataframe...")
-    _jobs_df = pd.read_pickle(df_path)
+    jobs_df = pd.read_pickle(df_path)
+    job_embeddings = np.load(emb_path)
 
-    print("[model.py] Loading embeddings...")
-    _job_embeddings = np.load(emb_path)
+    print(f"[model] Dataset : {jobs_df.shape}")
+    print(f"[model] Embeddings : {job_embeddings.shape}")
+    print(f"[model] Loaded in {time.time()-start:.2f} sec")
 
-    print(
-        f"[model.py] Data siap "
-        f"({_jobs_df.shape[0]:,} lowongan) "
-        f"dalam {time.time()-t0:.2f}s"
+    return jobs_df, job_embeddings
+
+
+# ==========================================================
+# RECOMMENDATION
+# ==========================================================
+def get_recommendations(user_skill, top_n=8):
+
+    jobs_df, job_embeddings = load_jobs_and_embeddings()
+
+    query = preprocess_text(user_skill)
+
+    user_embedding = model.encode(
+        [query],
+        convert_to_numpy=True,
+        normalize_embeddings=True
     )
 
-    return _jobs_df, _job_embeddings
+    similarity = np.dot(job_embeddings, user_embedding.T).flatten()
 
+    result = jobs_df.copy()
 
-# ─────────────────────────────────────────────────────────────
-# Text Preprocessing
-# ─────────────────────────────────────────────────────────────
-def preprocess_text(text):
+    # skor similarity
+    result["similarity_score"] = similarity
+    result["similarity_pct"] = (similarity * 100).round(2)
 
-    text = str(text).lower()
-
-    text = re.sub(
-        r'[^a-zA-Z0-9\s,]',
-        '',
-        text
+    # label rekomendasi
+    result["label"] = result["similarity_score"].apply(
+        lambda x: "Recommended" if x >= 0.40 else "Not Recommended"
     )
 
-    text = re.sub(
-        r'\s+',
-        ' ',
-        text
-    ).strip()
-
-    return text
-
-
-# ─────────────────────────────────────────────────────────────
-# Recommendation Engine
-# ─────────────────────────────────────────────────────────────
-def get_recommendations(
-    user_skill_input,
-    top_n=8
-):
-
-    df, job_embeddings = load_jobs_and_embeddings()
-
-    # STEP 1
-    user_text = preprocess_text(user_skill_input)
-
-    # STEP 2
-    user_vec = _model.encode(
-        [user_text],
-        normalize_embeddings=True,
-        convert_to_numpy=True
-    )
-
-    # STEP 3
-    similarities = np.dot(
-        job_embeddings,
-        user_vec.T
-    ).flatten()
-
-    # STEP 4
-    result_df = df.copy()
-
-    result_df["similarity_score"] = similarities
-
-    result_df["similarity_pct"] = (
-        similarities * 100
-    ).round(1)
-
-    result_df["label"] = result_df[
-        "similarity_score"
-    ].apply(
-        lambda x:
-        "Recommended"
-        if x >= 0.40
-        else "Not Recommended"
-    )
-
-    result_df = (
-        result_df
-        .sort_values(
+    # urutkan dari skor terbesar
+    result = (
+        result.sort_values(
             "similarity_score",
             ascending=False
         )
@@ -140,7 +104,4 @@ def get_recommendations(
         .reset_index(drop=True)
     )
 
-    print("Kolom dataframe:")
-    print(result_df.columns.tolist())
-
-    return result_df
+    return result

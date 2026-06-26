@@ -1,181 +1,118 @@
-import pandas as pd
-import numpy as np
-from sentence_transformers import SentenceTransformer
-import re
 import os
-import time
+import re
+import numpy as np
+import pandas as pd
+from sentence_transformers import SentenceTransformer
 
-# =====================================================
-# CONFIG
-# =====================================================
+CSV_PATH = "dataset/jobs.csv"
+OUTPUT_DF = "dataset/jobs_clean.pkl"
+OUTPUT_EMB = "dataset/job_embeddings.npy"
 
-DATASET_PATH = "dataset/jobs.csv"
-
-EMBEDDINGS_OUT = "dataset/job_embeddings.npy"
-DATAFRAME_OUT = "dataset/jobs_clean.pkl"
-
-MODEL_NAME = "all-mpnet-base-v2"
-
-# gunakan 50 ribu data dulu agar tidak berat
-MAX_ROWS = 50000
-
-BATCH_SIZE = 256
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
-# =====================================================
-# PREPROCESSING
-# =====================================================
-
-def preprocess_text(text):
-
-    text = str(text).lower()
-
-    text = re.sub(
-        r"[^a-zA-Z0-9\s,]",
-        "",
-        text
-    )
-
-    text = re.sub(
-        r"\s+",
-        " ",
-        text
-    ).strip()
-
+def clean_text(text):
+    if pd.isna(text):
+        return ""
+    text = str(text).strip().lower()
+    text = re.sub(r"\s+", " ", text)
     return text
 
 
-# =====================================================
-# MAIN
-# =====================================================
-
-def main():
-
-    print("=" * 60)
-    print("PRECOMPUTE EMBEDDINGS")
-    print("=" * 60)
-
-    # -------------------------------------------------
-    # LOAD DATASET
-    # -------------------------------------------------
-
-    print("\n[1/4] Loading dataset...")
-
-    t0 = time.time()
-
-    needed_cols = [
-        "Job Title",
-        "Company",
-        "location",
-        "Job Description"
+def build_job_text(row):
+    parts = [
+        row.get("Job Title", ""),
+        row.get("Role", ""),
+        row.get("skills", ""),
+        row.get("Qualifications", ""),
+        str(row.get("Job Description", ""))[:800],
+        str(row.get("Responsibilities", ""))[:500],
+        row.get("Benefits", ""),
+        row.get("Work Type", ""),
     ]
 
-    df = pd.read_csv(
-        DATASET_PATH,
-        usecols=needed_cols,
-        nrows=MAX_ROWS
-    )
+    parts = [clean_text(x) for x in parts if pd.notna(x) and str(x).strip()]
+    return " | ".join(parts)
 
-    print(
-        f"✓ {len(df):,} baris dimuat "
-        f"dalam {time.time()-t0:.2f}s"
-    )
+    parts = [clean_text(x) for x in parts if pd.notna(x) and str(x).strip()]
+    return " | ".join(parts)
 
-    # rename agar konsisten
-    df.rename(
-        columns={
-            "Job Title": "job_title",
-            "Company": "company",
-            "Job Description": "description"
-        },
-        inplace=True
-    )
 
-    # -------------------------------------------------
-    # PREPROCESS
-    # -------------------------------------------------
+def main():
+    print("[precompute] Loading CSV...")
 
-    print("\n[2/4] Preprocessing...")
+    # baca csv lebih toleran
+    try:
+        df = pd.read_csv(
+            CSV_PATH,
+            engine="python",
+            encoding="utf-8",
+            on_bad_lines="skip"
+        )
+    except Exception:
+        df = pd.read_csv(
+            CSV_PATH,
+            engine="python",
+            encoding="latin-1",
+            on_bad_lines="skip"
+        )
 
-    t0 = time.time()
+    print(f"[precompute] CSV loaded: {df.shape}")
+    # Ambil 3.000 data saja agar ringan
+    df = df.sample(n=3000, random_state=42)
+    print(f"[precompute] Using sample: {df.shape}")
+    print("[precompute] Kolom terdeteksi:")
+    print(df.columns.tolist())
 
-    df["clean_description"] = (
-        df["description"]
-        .fillna("")
-        .apply(preprocess_text)
-    )
+    # rapikan nama kolom
+    df.columns = [col.strip() for col in df.columns]
 
-    df = df[
-        df["clean_description"].str.len() > 10
-    ].reset_index(drop=True)
+    # isi NaN biar aman
+    text_cols = [
+        "Job Title", "Role", "Job Description", "skills", "Responsibilities",
+        "Qualifications", "Benefits", "Company", "Company Profile",
+        "Salary Range", "Experience", "location", "Country", "Work Type",
+        "Preference"
+    ]
 
-    print(
-        f"✓ {len(df):,} data valid "
-        f"dalam {time.time()-t0:.2f}s"
-    )
+    for col in text_cols:
+        if col in df.columns:
+            df[col] = df[col].fillna("")
 
-    # -------------------------------------------------
-    # LOAD MODEL
-    # -------------------------------------------------
+    # buat kolom gabungan untuk embedding
+    print("[precompute] Building combined text for embeddings...")
+    df["combined_text"] = df.apply(build_job_text, axis=1)
 
-    print("\n[3/4] Loading model...")
+    # buang baris kosong
+    df = df[df["combined_text"].str.strip() != ""].copy()
+    df = df.reset_index(drop=True)
 
+    print(f"[precompute] Data after cleaning: {df.shape}")
+
+    # load model
+    MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+
+    print("[precompute] Loading embedding model...")
     model = SentenceTransformer(MODEL_NAME)
 
-    texts = df["clean_description"].tolist()
-
-    print(
-        f"Encoding {len(texts):,} job descriptions..."
-    )
-
-    t0 = time.time()
-
-    job_embeddings = model.encode(
-        texts,
-        batch_size=BATCH_SIZE,
+    # encode
+    print("[precompute] Encoding job texts...")
+    embeddings = model.encode(
+        df["combined_text"].tolist(),
+        batch_size=32,
         show_progress_bar=True,
         convert_to_numpy=True,
         normalize_embeddings=True
     )
 
-    print(
-        f"✓ Encoding selesai "
-        f"dalam {time.time()-t0:.2f}s"
-    )
-
-    print(
-        f"✓ Shape embeddings: "
-        f"{job_embeddings.shape}"
-    )
-
-    # -------------------------------------------------
-    # SAVE
-    # -------------------------------------------------
-
-    print("\n[4/4] Menyimpan file...")
-
+    # simpan
     os.makedirs("dataset", exist_ok=True)
+    df.to_pickle(OUTPUT_DF)
+    np.save(OUTPUT_EMB, embeddings)
 
-    np.save(
-        EMBEDDINGS_OUT,
-        job_embeddings
-    )
-
-    df.to_pickle(
-        DATAFRAME_OUT
-    )
-
-    print(
-        f"✓ Saved: {EMBEDDINGS_OUT}"
-    )
-
-    print(
-        f"✓ Saved: {DATAFRAME_OUT}"
-    )
-
-    print("\nSELESAI!")
-    print("Sekarang jalankan:")
-    print("python app.py")
+    print(f"[precompute] Saved cleaned dataframe -> {OUTPUT_DF}")
+    print(f"[precompute] Saved embeddings -> {OUTPUT_EMB}")
+    print("[precompute] DONE.")
 
 
 if __name__ == "__main__":

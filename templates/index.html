@@ -1,472 +1,87 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NLP Loker — Temukan Lowongan Sesuai Skillmu</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --blue:       #2563eb;
-      --blue-dark:  #1d4ed8;
-      --blue-light: #eff6ff;
-      --cyan:       #06b6d4;
-      --text:       #0f172a;
-      --sub:        #475569;
-      --muted:      #94a3b8;
-      --border:     #e2e8f0;
-      --white:      #ffffff;
-      --surface:    #f8fafc;
-      --page:       #f1f5f9;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--page);
-      color: var(--text);
-      min-height: 100vh;
-      font-size: 15px;
-      line-height: 1.6;
-    }
-
-    /* ── NAVBAR ── */
-    .nav {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      height: 56px;
-      display: flex;
-      align-items: center;
-      padding: 0 1.5rem;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      box-shadow: 0 1px 4px rgba(0,0,0,.05);
-    }
-
-    .nav-brand {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 800;
-      font-size: 1rem;
-      color: var(--blue);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-    }
-
-    .nav-dot {
-      width: 7px; height: 7px;
-      background: var(--cyan);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: .6; transform: scale(1.3); }
-    }
-
-    /* ── HERO ── */
-    .hero {
-      background: linear-gradient(145deg, #0f2057 0%, #1d4ed8 55%, #3b82f6 100%);
-      padding: 64px 1.5rem 100px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Dekoratif blur circles */
-    .hero::before, .hero::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
-    }
-    .hero::before {
-      width: 360px; height: 360px;
-      background: rgba(99,179,237,.12);
-      top: -80px; left: -80px;
-    }
-    .hero::after {
-      width: 280px; height: 280px;
-      background: rgba(6,182,212,.10);
-      bottom: -60px; right: -40px;
-    }
-
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.22);
-      color: rgba(255,255,255,.9);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .07em;
-      text-transform: uppercase;
-      padding: 5px 14px;
-      border-radius: 9999px;
-      margin-bottom: 20px;
-    }
-
-    .hero h1 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: clamp(1.75rem, 4.5vw, 2.8rem);
-      font-weight: 800;
-      color: #fff;
-      line-height: 1.18;
-      margin-bottom: 14px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero h1 em {
-      font-style: normal;
-      color: #93c5fd;
-    }
-
-    .hero-sub {
-      font-size: .95rem;
-      color: rgba(255,255,255,.72);
-      max-width: 440px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-pills {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-pill {
-      background: rgba(255,255,255,.1);
-      border: 1px solid rgba(255,255,255,.18);
-      color: rgba(255,255,255,.85);
-      font-size: 12px;
-      padding: 4px 12px;
-      border-radius: 9999px;
-    }
-
-    /* ── CARD SEARCH (overlap hero) ── */
-    .wrap {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 0 1.25rem;
-    }
-
-    .search-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: 0 16px 48px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.06);
-      padding: 32px 36px;
-      margin-top: -48px;
-      position: relative;
-      z-index: 10;
-    }
-
-    .search-card-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .search-card-sub {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 20px;
-    }
-
-    label.field-label {
-      display: block;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--sub);
-      margin-bottom: 8px;
-      letter-spacing: .02em;
-    }
-
-    textarea.skill-input {
-      width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      color: var(--text);
-      background: var(--surface);
-      resize: vertical;
-      min-height: 104px;
-      transition: border .2s, box-shadow .2s, background .2s;
-      line-height: 1.65;
-    }
-
-    textarea.skill-input:focus {
-      outline: none;
-      border-color: var(--blue);
-      background: var(--white);
-      box-shadow: 0 0 0 3.5px rgba(37,99,235,.11);
-    }
-
-    textarea.skill-input::placeholder { color: var(--muted); font-size: 13px; }
-
-    .input-hint {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 7px;
-    }
-
-    .btn-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .btn-submit {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: 11px;
-      padding: 11px 26px;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .2s, transform .15s, box-shadow .2s;
-      box-shadow: 0 6px 18px rgba(37,99,235,.25);
-    }
-
-    .btn-submit:hover {
-      background: var(--blue-dark);
-      transform: translateY(-1px);
-      box-shadow: 0 10px 28px rgba(37,99,235,.30);
-    }
-
-    .btn-submit:active { transform: translateY(0); }
-
-    .btn-submit svg { width: 16px; height: 16px; }
-
-    /* ── ERROR ALERT ── */
-    .alert-err {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #b91c1c;
-      border-radius: 10px;
-      padding: 11px 14px;
-      font-size: 13px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    /* ── SUGGESTION CHIPS ── */
-    .chips-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px 22px;
-      margin-top: 18px;
-    }
-
-    .chips-label {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      margin-bottom: 11px;
-    }
-
-    .chip-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-
-    .chip {
-      background: var(--white);
-      color: var(--sub);
-      border: 1px solid var(--border);
-      border-radius: 9999px;
-      padding: 5px 13px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all .18s;
-      user-select: none;
-    }
-
-    .chip:hover {
-      background: var(--blue-light);
-      border-color: #bfdbfe;
-      color: var(--blue-dark);
-    }
-
-    /* ── HOW IT WORKS ── */
-    .how-section {
-      margin: 44px 0 36px;
-    }
-
-    .section-eyebrow {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--blue);
-      margin-bottom: 6px;
-    }
-
-    .section-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 18px;
-    }
-
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-
-    .step-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      transition: box-shadow .2s, transform .2s;
-    }
-
-    .step-card:hover {
-      box-shadow: 0 6px 20px rgba(0,0,0,.07);
-      transform: translateY(-2px);
-    }
-
-    .step-icon {
-      width: 40px; height: 40px;
-      background: var(--blue-light);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      margin-bottom: 12px;
-    }
-
-    .step-num {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--blue);
-      letter-spacing: .07em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .step-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: .88rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 5px;
-    }
-
-    .step-desc {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      text-align: center;
-      padding: 32px 0 28px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 620px) {
-      .hero { padding: 48px 1rem 90px; }
-      .search-card { padding: 22px 18px; border-radius: 16px; }
-      .steps-grid { grid-template-columns: 1fr; }
-      .btn-row { justify-content: stretch; }
-      .btn-submit { width: 100%; justify-content: center; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NLP Job Recommender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
+<div class="bg-blur bg1"></div>
+<div class="bg-blur bg2"></div>
+
 <!-- NAVBAR -->
 <nav class="nav">
-  <a class="nav-brand" href="/">
-    <span class="nav-dot"></span>
-    NLP Loker
+  <a href="/" class="nav-brand">
+    <div class="brand-logo">NL</div>
+    <div class="brand-text">
+      <span class="brand-title">NLP Loker</span>
+      <span class="brand-sub">Semantic Job Search</span>
+    </div>
   </a>
+  <div class="nav-right">
+    <span class="nav-pill">⚡ MPNet</span>
+    <span class="nav-pill">🎯 Cosine Similarity</span>
+  </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-tag">✦ Teknologi NLP · Semantic Search</div>
-  <h1>Temukan Lowongan yang<br><em>Benar-Benar Cocok</em> untukmu</h1>
-  <p class="hero-sub">Cukup tulis skill yang kamu punya — sistem kami akan mencocokkan dengan ribuan lowongan secara semantik.</p>
-  <div class="hero-pills">
-    <span class="hero-pill">⚡ Sentence Transformers</span>
-    <span class="hero-pill">🎯 Cosine Similarity</span>
-    <span class="hero-pill">🧠 MPNet all-mpnet-base-v2</span>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      AI Powered · Natural Language Processing
+    </div>
+    <h1>Temukan Lowongan yang<br><em class="grad-text">Benar-Benar Cocok</em> untukmu</h1>
+    <p class="hero-sub">
+      Cukup tulis skill yang kamu miliki — sistem NLP kami akan mencocokkan secara
+      semantik menggunakan <strong>Sentence Transformer MPNet</strong> dan <strong>Cosine Similarity</strong>.
+    </p>
+    <div class="hero-pills">
+      <span class="hero-pill">🧠 Sentence Transformers</span>
+      <span class="hero-pill">📐 768-dim Embedding</span>
+      <span class="hero-pill">🔗 Semantic Matching</span>
+      <span class="hero-pill">📊 3.000+ Job Dataset</span>
+    </div>
   </div>
 </section>
 
 <!-- MAIN -->
-<main class="wrap">
+<main class="main-wrap">
 
-  <!-- Search Card -->
+  <!-- SEARCH CARD -->
   <div class="search-card">
-    <p class="search-card-title">Masukkan Skill yang Kamu Miliki</p>
-    <p class="search-card-sub">Bisa dalam bahasa Inggris atau campur — sistem kami mengerti konteksnya.</p>
+    <div class="search-head">
+      <div class="search-icon">🔍</div>
+      <div>
+        <h3>Cari Lowongan Berdasarkan Skill</h3>
+        <p>Masukkan skill, teknologi, framework, atau deskripsi kemampuanmu. Semakin lengkap, semakin akurat hasilnya.</p>
+      </div>
+    </div>
 
     {% if error %}
-    <div class="alert-err">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
-      </svg>
-      {{ error }}
-    </div>
+    <div class="alert-err">⚠️ {{ error }}</div>
     {% endif %}
 
     <form action="/search" method="POST" id="searchForm">
-      <label class="field-label" for="skill_input">💼 Deskripsi Skill / Keahlian</label>
+      <label class="field-label" for="skill_input">💼 Skill / Keahlian Kamu</label>
       <textarea
         id="skill_input"
         name="skill_input"
         class="skill-input"
-        placeholder="Contoh: Python, machine learning, data visualization, scikit-learn, SQL..."
+        placeholder="Contoh: Python, Machine Learning, SQL, TensorFlow, Data Analysis, Power BI..."
         maxlength="1000"
+        required
       ></textarea>
-      <p class="input-hint">Pisahkan dengan koma atau tulis bebas dalam kalimat. Makin detail, makin akurat hasilnya.</p>
+      <p class="input-hint">✏️ Pisahkan dengan koma, atau tulis dalam kalimat bebas. Model NLP akan memahami konteksnya.</p>
+
       <div class="btn-row">
+        <button type="button" class="btn-clear" onclick="document.getElementById('skill_input').value=''">Reset</button>
         <button type="submit" class="btn-submit" id="submitBtn">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
           </svg>
           Cari Lowongan
@@ -474,76 +89,71 @@
       </div>
     </form>
 
-    <!-- Chip suggestions -->
     <div class="chips-box">
-      <p class="chips-label">💡 Coba contoh skill ini</p>
+      <p class="chips-label">💡 Contoh Skill Populer</p>
       <div class="chip-list" id="chipList">
-        <span class="chip" data-val="Python, data analysis, pandas, numpy, matplotlib">📊 Data Analyst</span>
-        <span class="chip" data-val="React, JavaScript, HTML, CSS, TypeScript, REST API">⚛️ Frontend Dev</span>
-        <span class="chip" data-val="Java, Spring Boot, MySQL, Docker, microservices">☕ Backend Java</span>
-        <span class="chip" data-val="machine learning, TensorFlow, deep learning, neural network">🤖 ML Engineer</span>
-        <span class="chip" data-val="Figma, UI UX design, prototyping, user research, wireframe">🎨 UI/UX Designer</span>
-        <span class="chip" data-val="Networking, Cisco, firewall, cybersecurity, Linux">🔐 Network Admin</span>
-        <span class="chip" data-val="PHP, Laravel, MySQL, REST API, Vue.js">🐘 Full Stack PHP</span>
-        <span class="chip" data-val="project management, Scrum, Agile, Jira, leadership">📋 Project Manager</span>
+        <button class="chip" data-skill="Python, SQL, Data Analysis, Pandas, Numpy, Machine Learning, Statistics">📊 Data Analyst</button>
+        <button class="chip" data-skill="Java, Spring Boot, REST API, Docker, MySQL, Microservices">☕ Backend Java</button>
+        <button class="chip" data-skill="React, HTML, CSS, JavaScript, TypeScript, Redux, REST API">⚛️ Frontend Dev</button>
+        <button class="chip" data-skill="TensorFlow, Deep Learning, NLP, Python, PyTorch, scikit-learn">🤖 ML Engineer</button>
+        <button class="chip" data-skill="PHP, Laravel, Vue.js, REST API, MySQL, Composer">🐘 Fullstack PHP</button>
+        <button class="chip" data-skill="Figma, UI UX design, prototyping, user research, wireframe, Adobe XD">🎨 UI/UX Designer</button>
+        <button class="chip" data-skill="Linux, Cisco, Firewall, Networking, VPN, Cybersecurity">🔐 Network Engineer</button>
+        <button class="chip" data-skill="Project Management, Scrum, Agile, Jira, leadership, communication">📋 Project Manager</button>
       </div>
     </div>
   </div>
 
-  <!-- How it works -->
-  <div class="how-section">
-    <p class="section-eyebrow">Cara Kerja</p>
-    <p class="section-title">Bagaimana Sistem NLP Bekerja?</p>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-icon">🧹</div>
-        <p class="step-num">Langkah 1</p>
-        <p class="step-title">Text Preprocessing</p>
-        <p class="step-desc">Input dan deskripsi lowongan dibersihkan: case folding, hapus noise, normalisasi spasi.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-icon">🧠</div>
-        <p class="step-num">Langkah 2</p>
-        <p class="step-title">Sentence Embedding</p>
-        <p class="step-desc">Teks diubah jadi vektor 768 dimensi menggunakan model MPNet all-mpnet-base-v2.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-icon">🎯</div>
-        <p class="step-num">Langkah 3</p>
-        <p class="step-title">Cosine Similarity</p>
-        <p class="step-desc">Kecocokan dihitung dari sudut antar vektor skill kamu vs tiap deskripsi lowongan.</p>
-      </div>
+  <!-- HOW IT WORKS -->
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon blue">🧹</div>
+      <p class="step-num">Langkah 01</p>
+      <h4>Text Preprocessing</h4>
+      <p>Input skill dan deskripsi lowongan dibersihkan: case folding, hapus karakter noise, normalisasi spasi.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon purple">🧠</div>
+      <p class="step-num">Langkah 02</p>
+      <h4>Sentence Embedding</h4>
+      <p>Teks diubah menjadi vektor 768 dimensi menggunakan model <strong>all-MiniLM-L6-v2</strong> dari Sentence Transformers.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon teal">🎯</div>
+      <p class="step-num">Langkah 03</p>
+      <h4>Cosine Similarity</h4>
+      <p>Kecocokan dihitung dari sudut antar vektor skill kamu vs tiap deskripsi lowongan, lalu diurutkan dari tertinggi.</p>
     </div>
   </div>
 
 </main>
 
-<footer>
-  Dibuat untuk keperluan Tugas UAS · NLP Job Recommender menggunakan <strong>Sentence Transformers + MPNet</strong>
+<footer class="footer">
+  NLP Job Recommender &middot; Sentence Transformers · Cosine Similarity &middot; UAS Project
 </footer>
 
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p class="loading-title">Memproses dengan NLP...</p>
+    <p class="loading-sub">Menghitung cosine similarity terhadap 3.000+ lowongan kerja</p>
+  </div>
+</div>
+
 <script>
-  // Chip click → isi textarea
   document.querySelectorAll('#chipList .chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      document.getElementById('skill_input').value = chip.dataset.val;
+      document.getElementById('skill_input').value = chip.dataset.skill;
       document.getElementById('skill_input').focus();
     });
   });
-
-  // Loading state saat submit
-  document.getElementById('searchForm').addEventListener('submit', function () {
+  document.getElementById('searchForm').addEventListener('submit', function() {
+    document.getElementById('loadingOverlay').classList.add('show');
     const btn = document.getElementById('submitBtn');
-    btn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3M3 12h3m12 0h3m-2.636-6.364-2.121 2.121M8.757 15.243l-2.121 2.121m0-12.728 2.121 2.121m6.486 6.486 2.121 2.121"/>
-      </svg>
-      Memproses...
-    `;
-    btn.style.opacity = '0.75';
     btn.disabled = true;
+    btn.style.opacity = '0.7';
   });
 </script>
-
 </body>
 </html>
